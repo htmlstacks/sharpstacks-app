@@ -33,7 +33,6 @@ jobs:
 
       - name: Run Scraper
         run: |
-          cd scraper
           node scrape_trends.js
 
       - name: Commit and Push Changes
