@@ -1,0 +1,45 @@
+name: Daily NHL Trends Update
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # Runs everyday at 8:00 AM EST
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: |
+          cd scraper
+          npm install playwright
+
+      - name: Install Playwright Browsers
+        run: |
+          cd scraper
+          npx playwright install --with-deps
+
+      - name: Run Scraper
+        run: |
+          cd scraper
+          node scrape_trends.js
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "SharpStacks Bot"
+          git config --global user.email "bot@sharpstacks.com"
+          git add nhl_trends.json
+          git commit -m "Auto-update NHL Trends [skip ci]" || echo "No changes to commit"
+          git push
