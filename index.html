@@ -149,6 +149,13 @@
         .props-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--color-border); }
         .props-section-title { font-family: 'Barlow', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-green); }
         .last-updated { font-size: 11px; color: var(--color-text-muted); font-weight: 500; }
+        
+        /* TREND CARD STYLES */
+        .trend-card { background: var(--color-surface); border-left: 4px solid var(--primary-green); padding: 20px; border-radius: 4px 12px 12px 4px; position: relative; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .trend-icon { position: absolute; top: 20px; right: 20px; font-size: 20px; opacity: 0.2; color: var(--primary-green); }
+        .trend-team { font-family: 'Barlow', sans-serif; font-weight: 700; color: var(--color-text); margin-bottom: 4px; font-size: 16px; }
+        .trend-text { font-size: 13px; color: var(--color-text-muted); line-height: 1.5; }
+        .trend-date { font-size: 10px; color: var(--primary-green-dim); margin-top: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
         @media (max-width: 768px) { .props-selector-grid, .props-grid { grid-template-columns: 1fr; } }
         .hidden-view { display: none !important; }
@@ -197,10 +204,11 @@
             </div>
 
             <div id="props-selector-section" class="mt-8 pt-8 border-t border-[var(--color-border)]">
-                <h2 class="text-2xl font-bold text-[var(--color-text)] mb-6 flex items-center gap-2">Player Props <span class="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold" style="background:rgba(34,197,94,0.1);color:var(--primary-green);border:1px solid rgba(34,197,94,0.2)">Daily Picks</span></h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 props-selector-grid">
+                <h2 class="text-2xl font-bold text-[var(--color-text)] mb-6 flex items-center gap-2">Player Props & Trends</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 props-selector-grid">
                     <div class="props-section-card" onclick="switchView('nhl')"><div class="props-icon">🏒</div><div class="props-title">NHL Props</div><div class="props-subtitle">Goal & Point Predictions</div></div>
                     <div class="props-section-card" onclick="switchView('nba')"><div class="props-icon">🏀</div><div class="props-title">NBA Props</div><div class="props-subtitle">Points, Rebounds & Assists</div></div>
+                    <div class="props-section-card" onclick="switchView('nhl-trends')"><div class="props-icon" style="color:#60a5fa">📈</div><div class="props-title" style="color:#60a5fa">NHL Trends</div><div class="props-subtitle">Daily Trends & Betting Insights</div></div>
                 </div>
             </div>
         </div>
@@ -227,6 +235,17 @@
                 <button class="filter-btn" onclick="NBAApp.filterCards('dd',this)">Double Double</button>
             </div>
             <div id="nba-props-grid" class="props-grid"><div class="props-loading">Loading NBA Predictions...</div></div>
+        </div>
+
+        <div id="nhl-trends-content" class="props-content hidden-view">
+             <button class="back-btn" onclick="switchView('home')"><i class="fas fa-arrow-left"></i> Back to Overview</button>
+             <div class="props-section-header">
+                <div class="props-section-title">📈 NHL Trends Today</div>
+                <div id="trends-date-header" class="last-updated">Checking updates...</div>
+             </div>
+             <div id="trends-container" class="max-w-4xl mx-auto">
+                <div class="props-loading">Loading trends...</div>
+             </div>
         </div>
     </main>
 
@@ -303,8 +322,11 @@
             document.getElementById('home-view').classList.add('hidden-view');
             document.getElementById('nhl-props-content').classList.remove('active');
             document.getElementById('nba-props-content').classList.remove('active');
+            document.getElementById('nhl-trends-content').classList.remove('active');
+            
             document.getElementById('nhl-props-content').classList.add('hidden-view');
             document.getElementById('nba-props-content').classList.add('hidden-view');
+            document.getElementById('nhl-trends-content').classList.add('hidden-view');
 
             if(view === 'home') {
                 document.getElementById('home-view').classList.remove('hidden-view');
@@ -319,6 +341,11 @@
                 document.getElementById('nba-props-content').classList.remove('hidden-view');
                 document.getElementById('nba-props-content').classList.add('active');
                 NBAApp.init();
+            } else if(view === 'nhl-trends') {
+                document.getElementById('home-view').classList.add('hidden-view');
+                document.getElementById('nhl-trends-content').classList.remove('hidden-view');
+                document.getElementById('nhl-trends-content').classList.add('active');
+                TrendsApp.init();
             }
             window.scrollTo(0,0);
         }
@@ -543,8 +570,6 @@
                 d.forEach((r, i) => {
                     if (!r.Player) return; let bc = 'badge-neutral', st = 'Standard'; if (r.Status?.includes('🔥')) { bc = 'badge-fire'; st = 'Top Pick' }
                     const id = r.Player_ID ? r.Player_ID.toString().split('.')[0].trim() : '';
-                    // UPDATED: Season changed from 20242025 to 20252026
-                    // ADDED: Fallback onerror to catch missing images
                     const hu = id ? `https://assets.nhle.com/mugs/nhl/20252026/${id}.png` : 'https://assets.nhle.com/mugs/nhl/default-skater.png';
                     const h = `<div class="prediction-card" onclick="NHLApp.openModal(${i})"><div class="card-header-props"><div class="player-img-wrapper"><img src="${hu}" class="headshot" onerror="this.onerror=null;this.src='https://assets.nhle.com/mugs/nhl/default-skater.png'"></div><div class="player-info"><h3>${r.Player}</h3><div class="team-info">${r.Team || ''} vs ${r.Opponent || ''}</div></div><div class="status-badge ${bc}">${st}</div></div><div class="card-stats"><div class="stat-row"><div><span class="stat-label">Goal Prob</span><span class="stat-value prob-val">${r['Goal %'] || '-'}</span></div><div class="text-right"><span class="stat-label">Odds</span><span class="stat-value odds-val">${formatOdds(r['Goal Odds'])}</span></div></div><div class="stat-row"><div><span class="stat-label">Point Prob</span><span class="stat-value prob-val">${r['Point %'] || '-'}</span></div><div class="text-right"><span class="stat-label">Odds</span><span class="stat-value odds-val">${formatOdds(r['Point Odds'])}</span></div></div></div><div class="card-footer-props"><div class="xg-stat"><span>xG:</span> ${r.xG || '-'}</div><div class="xg-stat"><span>Proj Pts:</span> ${r['Pred Pts'] || '-'}</div></div></div>`; c.insertAdjacentHTML('beforeend', h);
                 });
@@ -558,7 +583,6 @@
                 l5.forEach(g => { t += `<tr><td>${g.date}</td><td>${g.opp}</td><td class="g-col">${g.goals}</td><td class="p-col">${g.points}</td></tr>` });
                 t += `</tbody></table>`;
                 const id = p.Player_ID ? p.Player_ID.toString().split('.')[0].trim() : '';
-                // UPDATED: Season changed from 20242025 to 20252026
                 const hu = id ? `https://assets.nhle.com/mugs/nhl/20252026/${id}.png` : '';
                 document.getElementById('nhl-modal-header').innerHTML = `<div class="player-img-wrapper" style="width:50px;height:50px"><img src="${hu}" class="headshot" onerror="this.style.display='none'"></div><h2 class="text-xl font-bold text-[var(--color-text)]">${p.Player}</h2>`;
                 document.getElementById('nhl-modal-body').innerHTML = t;
@@ -580,7 +604,6 @@
                 const c = document.getElementById('nba-props-grid'); c.innerHTML = ''; if (!d || d.length === 0) { c.innerHTML = '<div class="props-loading">No data found.</div>'; return }
                 d.forEach((r, i) => {
                     if (!r.Player) return; let bc = 'badge-neutral', st = 'Active'; if (parseFloat(r.PRED_PTS) >= 25) { bc = 'badge-fire'; st = 'Elite' }
-                    // UPDATED: Now dynamically fetching NBA Headshots instead of hardcoded fallback
                     const id = r.Player_ID ? r.Player_ID.toString().split('.')[0].trim() : '';
                     const hu = id ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${id}.png` : 'https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png';
                     const h = `<div class="prediction-card" onclick="NBAApp.openModal(${i})"><div class="card-header-props"><div class="player-img-wrapper"><img src="${hu}" class="headshot" onerror="this.onerror=null;this.src='https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png'"></div><div class="player-info"><h3>${r.Player}</h3><div class="team-info">${r.Team || ''} @ ${r.Opponent || ''}</div></div><div class="status-badge ${bc}">${st}</div></div><div class="card-stats"><div class="stat-row"><div><span class="stat-label">Proj Pts</span><span class="stat-value odds-val">${formatStat(r.PRED_PTS)}</span></div><div class="text-right"><span class="stat-label">Proj Reb</span><span class="stat-value">${formatStat(r.PRED_REB)}</span></div></div><div class="stat-row"><div><span class="stat-label">Proj Ast</span><span class="stat-value">${formatStat(r.PRED_AST)}</span></div><div class="text-right"><span class="stat-label">Double-D</span><span class="stat-value prob-val">${r.PROB_DD || '0%'}</span></div></div></div><div class="card-footer-props"><div class="xg-stat"><span>L5 Avg:</span> ${formatStat(r.L5_PTS)}</div><div class="xg-stat"><span>Opp Def:</span> ${formatStat(r.Opp_Def_Rating)}</div></div></div>`; c.insertAdjacentHTML('beforeend', h);
@@ -589,6 +612,56 @@
             function openModal(i) { const p = currentData[i]; const m = document.getElementById('nba-stats-modal'); document.getElementById('nba-modal-header').innerHTML = `<h2 class="text-xl font-bold text-[var(--color-text)]">${p.Player}</h2>`; document.getElementById('nba-modal-body').innerHTML = `<div class="stat-box-container"><div class="modal-stat-box"><span class="ms-label">Points</span><span class="ms-value" style="color:var(--primary-green)">${formatStat(p.PRED_PTS)}</span></div><div class="modal-stat-box"><span class="ms-label">Rebounds</span><span class="ms-value">${formatStat(p.PRED_REB)}</span></div><div class="modal-stat-box"><span class="ms-label">Assists</span><span class="ms-value">${formatStat(p.PRED_AST)}</span></div><div class="modal-stat-box"><span class="ms-label">Double Double %</span><span class="ms-value" style="color:var(--green)">${p.PROB_DD}</span></div></div>`; m.classList.add('active'); }
             function closeModal() { document.getElementById('nba-stats-modal').classList.remove('active') }
             return { init, filterCards, openModal, closeModal };
+        })();
+        
+        /* --- TRENDS APP --- */
+        const TrendsApp = (() => {
+            let isLoaded = false;
+            
+            async function init() {
+                if(isLoaded) return;
+                const container = document.getElementById('trends-container');
+                const header = document.getElementById('trends-date-header');
+                
+                try {
+                    // Added timestamp to force fresh fetch and bypass cache
+                    const response = await fetch('nhl_trends.json?t=' + new Date().getTime());
+                    if(!response.ok) throw new Error("Trends data not found");
+                    const data = await response.json();
+                    
+                    header.innerText = `Generated: ${data.date_display}`;
+                    container.innerHTML = '';
+                    
+                    if(data.trends.length === 0) {
+                        container.innerHTML = '<div class="props-loading">No trends available today.</div>';
+                        return;
+                    }
+
+                    data.trends.forEach(t => {
+                        const card = `
+                            <div class="trend-card">
+                                <i class="fas fa-chart-line trend-icon"></i>
+                                <div class="trend-team">${t.team}</div>
+                                <div class="trend-text">${t.display_text}</div>
+                                <div class="trend-date">Source: Market Analysis • ${t.sample} Sample</div>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', card);
+                    });
+                    
+                    isLoaded = true;
+                } catch(e) {
+                    // Fallback for demo purposes if file doesn't exist yet
+                    container.innerHTML = `
+                        <div class="text-center p-8 border border-dashed border-[var(--color-border)] rounded-lg">
+                            <p class="text-[var(--color-text-muted)] mb-2">Automation not yet active.</p>
+                            <p class="text-xs text-[var(--color-text-muted)]">Please run the scraper script to generate <code>nhl_trends.json</code>.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            return { init };
         })();
 
         document.addEventListener('DOMContentLoaded', () => { HomeApp.init(); });
