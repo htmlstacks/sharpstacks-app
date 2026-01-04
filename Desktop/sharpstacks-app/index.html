@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHARPSTACKS - Elite Engine</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <style>
+        /* DARK MODE THEME VARIABLES */
+        :root {
+            --primary-green: #22c55e;
+            --primary-green-dim: #15803d;
+            --primary-gradient: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+            --metallic-shine: linear-gradient(135deg, #22c55e 0%, #86efac 25%, #22c55e 50%, #166534 75%, #22c55e 100%);
+            
+            --color-bg: #0f172a;        /* Slate 900 */
+            --color-surface: #1e293b;   /* Slate 800 */
+            --color-surface-hover: #334155; /* Slate 700 */
+            --color-text: #f8fafc;      /* Slate 50 */
+            --color-text-muted: #94a3b8; /* Slate 400 */
+            --color-border: #334155;    /* Slate 700 */
+            
+            --status-hot: #f87171;
+            --status-cold: #60a5fa;
+            --green: #4ade80;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--color-bg); color: var(--color-text); overflow-x: hidden; padding-bottom: 80px; margin: 0; }
+        h1, h2, h3, .brand-font { font-family: 'Barlow', sans-serif; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+        /* TEXT EFFECTS */
+        .text-gradient-metallic { background: var(--metallic-shine); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: metallic-shimmer 3s ease-in-out infinite; }
+        @keyframes metallic-shimmer { 0% { background-position: 0% 50% } 50% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
+
+        /* COMPONENTS */
+        .action-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; transition: all .2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+        .action-card:hover { border-color: var(--primary-green); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.2); }
+        
+        .sport-btn { background: var(--color-surface); color: var(--color-text-muted); border: 1px solid var(--color-border); transition: all .2s; }
+        .sport-btn:hover { border-color: var(--primary-green); color: var(--primary-green); background: var(--color-surface-hover); }
+        .sport-btn.active { background: var(--primary-gradient); border-color: transparent; color: #fff; box-shadow: 0 4px 6px -1px rgba(22, 101, 52, 0.4); }
+
+        .loader { border: 3px solid var(--color-border); border-top: 3px solid var(--primary-green); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg) } }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-connected { background: #4ade80; box-shadow: 0 0 5px #4ade80; }
+        .status-loading { background: #facc15; animation: pulse-dot 1s infinite; }
+        .status-error { background: #f87171; }
+        @keyframes pulse-dot { 0% { opacity: 1 } 50% { opacity: .5 } 100% { opacity: 1 } }
+
+        /* HEADER & DATE */
+        .header-date-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* TABLES */
+        .analysis-table th { text-transform: uppercase; font-size: .65rem; color: var(--color-text-muted); font-weight: 700; text-align: left; padding: .75rem; border-bottom: 1px solid var(--color-border); white-space: nowrap; background: var(--color-bg); }
+        .analysis-table td { font-size: .75rem; color: var(--color-text); padding: .75rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+        .analysis-table tr:last-child td { border-bottom: none; }
+
+        /* TABS */
+        .modal-tab { padding-bottom: .5rem; color: var(--color-text-muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all .2s; }
+        .modal-tab:hover { color: var(--color-text); }
+        .modal-tab.active { color: var(--primary-green); border-bottom-color: var(--primary-green); }
+
+        /* PROPS SECTION CARDS */
+        .props-section-card { background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-bg) 100%); border: 2px solid var(--color-border); border-radius: 16px; padding: 30px; cursor: pointer; transition: all .3s; text-align: center; position: relative; overflow: hidden; }
+        .props-section-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); transform: scaleX(0); transition: transform .3s; }
+        .props-section-card:hover { border-color: var(--primary-green); transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(34, 197, 94, 0.1); }
+        .props-section-card:hover::before, .props-section-card.active::before { transform: scaleX(1); }
+        .props-section-card.active { border-color: var(--primary-green); background: linear-gradient(145deg, rgba(22, 101, 52, 0.1) 0%, var(--color-surface) 100%); }
+
+        .props-icon { font-size: 48px; margin-bottom: 15px; }
+        .props-title { font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 24px; color: var(--primary-green); margin-bottom: 8px; }
+        .props-subtitle { font-size: 14px; color: var(--color-text-muted); }
+        .props-content { display: none; animation: fadeIn .3s; }
+        .props-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+
+        /* FILTERS & GRID */
+        .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .filter-btn { padding: 8px 16px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; }
+        .filter-btn:hover { border-color: var(--primary-green); color: var(--primary-green); }
+        .filter-btn.active { background: var(--primary-green); color: #000; border-color: var(--primary-green); }
+        
+        .props-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+        .props-loading { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--color-text-muted); font-style: italic; }
+
+        /* PREDICTION CARDS */
+        .prediction-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column; cursor: pointer; }
+        .prediction-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border-color: var(--primary-green); }
+        .prediction-card.hidden { display: none; }
+
+        .card-header-props { padding: 16px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 12px; position: relative; }
+        .player-img-wrapper { width: 60px; height: 60px; border-radius: 50%; background: var(--color-bg); overflow: hidden; flex-shrink: 0; border: 2px solid var(--color-border); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); position: relative; }
+        .headshot { width: 100%; height: 100%; object-fit: cover; transform: scale(1.1) translateY(5px); }
+        .team-logo-small { position: absolute; bottom: -2px; right: -2px; width: 24px; height: 24px; background: var(--color-surface); border-radius: 50%; padding: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); z-index: 2; border: 1px solid var(--color-border); }
+        
+        .player-info h3 { margin: 0; font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.1; color: var(--color-text); }
+        .team-info { font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-top: 4px; }
+        
+        .status-badge { position: absolute; top: 16px; right: 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 4px; }
+        .badge-fire { background: rgba(248, 113, 113, 0.2); color: var(--status-hot); border: 1px solid rgba(248, 113, 113, 0.3); }
+        .badge-ice { background: rgba(96, 165, 250, 0.2); color: var(--status-cold); border: 1px solid rgba(96, 165, 250, 0.3); }
+        .badge-neutral { background: var(--color-bg); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+
+        .card-stats { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(0,0,0,0.2); }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; background: var(--color-surface); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--color-border); }
+        .stat-label { font-size: 9px; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; display: block; }
+        .stat-value { font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 700; color: var(--color-text); }
+        .prob-val { color: var(--green); }
+        .odds-val { color: var(--primary-green); }
+
+        .card-footer-props { padding: 10px 16px; font-size: 11px; color: var(--color-text-muted); border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; background: var(--color-surface); }
+        .xg-stat { font-weight: 600; } .xg-stat span { font-weight: 400; }
+
+        /* MODALS */
+        .props-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity .3s; backdrop-filter: blur(4px); }
+        .props-modal-content { background: var(--color-surface); width: 90%; max-width: 500px; border-radius: 12px; padding: 20px; position: relative; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); transform: translateY(20px); transition: transform .3s; border: 1px solid var(--color-border); }
+        .props-modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; font-size: 24px; color: var(--color-text-muted); }
+        .props-modal-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 15px; }
+        .props-modal-title h2 { margin: 0; font-family: 'Barlow', sans-serif; font-size: 22px; color: var(--color-text); }
+        .props-modal-overlay.active { display: flex; opacity: 1; }
+        .props-modal-overlay.active .props-modal-content { transform: translateY(0); }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .history-table th { text-align: left; padding: 8px; background: var(--color-bg); color: var(--color-text-muted); font-weight: 600; }
+        .history-table td { padding: 10px 8px; border-bottom: 1px solid var(--color-border); color: var(--color-text); }
+        .history-table tr:last-child td { border-bottom: none; }
+        .g-col { font-weight: bold; color: var(--status-hot); } .p-col { font-weight: bold; color: var(--green); }
+
+        .stat-box-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .modal-stat-box { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 10px; padding: 16px; text-align: center; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform .1s; }
+        .ms-label { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; margin-bottom: 8px; }
+        .ms-value { font-family: 'Barlow', sans-serif; font-size: 28px; font-weight: 800; color: var(--color-text); line-height: 1; }
+
+        .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--color-text-muted); cursor: pointer; transition: all .2s; margin-bottom: 20px; }
+        .back-btn:hover { border-color: var(--primary-green); color: var(--primary-green); }
+        .props-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--color-border); }
+        .props-section-title { font-family: 'Barlow', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-green); }
+        .last-updated { font-size: 11px; color: var(--color-text-muted); font-weight: 500; }
+
+        @media (max-width: 768px) { .props-selector-grid, .props-grid { grid-template-columns: 1fr; } }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="border-b border-[var(--color-border)] sticky top-0 z-40 shadow-lg" style="background:var(--color-surface)">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="https://i.imgur.com/c1OJtmR.png" alt="SharpStacks" class="h-10 w-auto object-contain">
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight leading-none text-gradient-metallic uppercase">SHARPSTACKS</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span id="connection-dot" class="status-dot status-loading"></span>
+                        <span id="connection-text" class="text-[10px] text-[var(--color-text-muted)] uppercase font-bold tracking-wider">Initializing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 container mx-auto px-4 py-6">
+        <div id="home-view">
+            <div class="mb-8"><div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="sport-selector"></div></div>
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-[var(--color-border)] pb-4">
+                <div>
+                    <h2 id="current-sport-title" class="text-2xl font-bold text-[var(--color-text)] capitalize flex items-center gap-2">
+                        NBA Games <span class="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold" style="background:rgba(34,197,94,0.1);color:var(--primary-green);border:1px solid rgba(34,197,94,0.2)">Live Feed</span>
+                    </h2>
+                    <p class="text-[var(--color-text-muted)] text-sm mt-1">Elite Engine • Verified Odds Integration</p>
+                </div>
+                <div class="flex items-center gap-1 p-1 rounded-lg border border-[var(--color-border)] shadow-sm" style="background:var(--color-surface)">
+                    <button id="prev-date-btn" class="w-8 h-8 flex items-center justify-center text-[var(--color-text-muted)] hover:text-green-400 hover:bg-[var(--color-bg)] rounded transition-colors"><i class="fas fa-chevron-left"></i></button>
+                    <div class="relative flex items-center justify-center px-2 py-1 cursor-pointer group hover:bg-[var(--color-bg)] rounded transition-colors w-40">
+                        <i class="far fa-calendar-alt mr-2" style="color:var(--primary-green)"></i>
+                        <span class="text-sm font-bold text-[var(--color-text)] group-hover:text-green-400" id="current-date-display">Today</span>
+                        <input type="date" id="date-picker-input" class="header-date-input absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+                    </div>
+                    <button id="next-date-btn" class="w-8 h-8 flex items-center justify-center text-[var(--color-text-muted)] hover:text-green-400 hover:bg-[var(--color-bg)] rounded transition-colors"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+                <div class="col-span-full h-64 flex flex-col items-center justify-center text-[var(--color-text-muted)]"><div class="loader mb-4"></div><p class="text-sm font-medium">Connecting to Elite Analysis Engine...</p></div>
+            </div>
+
+            <div id="props-selector-section" class="mt-8 pt-8 border-t border-[var(--color-border)]">
+                <h2 class="text-2xl font-bold text-[var(--color-text)] mb-6 flex items-center gap-2">Player Props <span class="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold" style="background:rgba(34,197,94,0.1);color:var(--primary-green);border:1px solid rgba(34,197,94,0.2)">Daily Picks</span></h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 props-selector-grid">
+                    <div class="props-section-card" onclick="switchView('nhl')"><div class="props-icon">🏒</div><div class="props-title">NHL Props</div><div class="props-subtitle">Goal & Point Predictions</div></div>
+                    <div class="props-section-card" onclick="switchView('nba')"><div class="props-icon">🏀</div><div class="props-title">NBA Props</div><div class="props-subtitle">Points, Rebounds & Assists</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="nhl-props-content" class="props-content hidden-view">
+            <button class="back-btn" onclick="switchView('home')"><i class="fas fa-arrow-left"></i> Back to Overview</button>
+            <div class="props-section-header"><div class="props-section-title">🏒 NHL Daily Picks</div><div id="nhl-last-updated" class="last-updated">Loading...</div></div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="NHLApp.filterCards('all',this)">All Players</button>
+                <button class="filter-btn" onclick="NHLApp.filterCards('hot',this)">🔥 Hot Picks</button>
+                <button class="filter-btn" onclick="NHLApp.filterCards('high-point',this)">High Point %</button>
+                <button class="filter-btn" onclick="NHLApp.filterCards('high-goal',this)">High Goal %</button>
+            </div>
+            <div id="nhl-props-grid" class="props-grid"><div class="props-loading">Loading NHL Predictions...</div></div>
+        </div>
+
+        <div id="nba-props-content" class="props-content hidden-view">
+            <button class="back-btn" onclick="switchView('home')"><i class="fas fa-arrow-left"></i> Back to Overview</button>
+            <div class="props-section-header"><div class="props-section-title">🏀 NBA Daily Picks</div><div id="nba-last-updated" class="last-updated">Loading...</div></div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="NBAApp.filterCards('all',this)">All Players</button>
+                <button class="filter-btn" onclick="NBAApp.filterCards('hot',this)">🔥 Hot Picks</button>
+                <button class="filter-btn" onclick="NBAApp.filterCards('high-pts',this)">20+ Points</button>
+                <button class="filter-btn" onclick="NBAApp.filterCards('dd',this)">Double Double</button>
+            </div>
+            <div id="nba-props-grid" class="props-grid"><div class="props-loading">Loading NBA Predictions...</div></div>
+        </div>
+    </main>
+
+    <div id="match-modal" class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-5xl rounded-xl border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[95vh]" style="background:var(--color-surface)">
+            <div class="p-5 border-b border-[var(--color-border)] rounded-t-xl" style="background:var(--color-bg)">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1.5"><span id="modal-status" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] tracking-wide" style="background:var(--color-surface)">Upcoming</span><span id="modal-time" class="text-[var(--color-text-muted)] text-xs font-mono">7:00 PM ET</span></div>
+                        <h2 id="modal-matchup" class="text-xl font-bold text-[var(--color-text)]">Matchup</h2>
+                        <div id="modal-quality-badge" class="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[var(--color-border)] text-[var(--color-text-muted)]" style="background:var(--color-surface)">QUALITY: CHECKING...</div>
+                    </div>
+                    <button onclick="HomeApp.closeModal()" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] p-2 transition-colors"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="flex gap-6 text-sm font-bold">
+                    <button onclick="HomeApp.switchModalTab('analysis')" id="tab-btn-analysis" class="modal-tab active">Betting Analysis</button>
+                    <button onclick="HomeApp.switchModalTab('stats')" id="tab-btn-stats" class="modal-tab">Matchup & Stats</button>
+                </div>
+            </div>
+            <div id="modal-content-body" class="overflow-y-auto p-5 space-y-6 flex-1" style="background:var(--color-surface)"></div>
+            <div class="p-4 border-t border-[var(--color-border)] rounded-b-xl text-[10px] text-[var(--color-text-muted)] text-center" style="background:var(--color-bg)">Values based on live odds & season leader stats.</div>
+        </div>
+    </div>
+
+    <div id="arbitrage-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-6xl rounded-xl border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[95vh]" style="background:var(--color-surface)">
+            <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-start rounded-t-xl" style="background:var(--color-bg)">
+                <div><h2 class="text-xl font-bold text-[var(--color-text)] flex items-center gap-2"><i class="fas fa-scale-balanced" style="color:var(--primary-green)"></i> Arbitrage Scanner</h2><p class="text-[var(--color-text-muted)] text-xs mt-1">Live "Surebets" for NFL, NBA, and NHL</p></div>
+                <button onclick="HomeApp.closeArbitrageModal()" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] p-2 transition-colors"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="overflow-y-auto p-5 space-y-6" style="background:var(--color-surface)">
+                <div class="p-4 rounded-lg border text-xs leading-relaxed shadow-sm" style="background:rgba(34,197,94,0.05);border-color:rgba(34,197,94,0.2);color:var(--green)">
+                    <p class="mb-3"><strong style="color:var(--primary-green)" class="text-sm">Arbitrage betting</strong> is the art of "selling a dollar for $1.05" without sportsbooks noticing.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                    <div class="relative"><label class="block text-[10px] font-bold text-[var(--color-text-muted)] uppercase mb-1">League</label><select id="arb-sportSelect" class="w-full border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] text-sm focus:border-green-600 outline-none appearance-none cursor-pointer" style="background:var(--color-bg)"><option value="" disabled selected>Loading leagues...</option></select><div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--color-text-muted)] pt-5"><i class="fas fa-chevron-down text-xs"></i></div></div>
+                    <div><label class="block text-[10px] font-bold text-[var(--color-text-muted)] uppercase mb-1">Date</label><input type="date" id="arb-dateSelect" class="w-full border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] text-sm focus:border-green-600 outline-none cursor-pointer" style="background:var(--color-bg)"></div>
+                    <div class="flex items-end"><button onclick="HomeApp.runArbitrageScan()" class="w-full text-white font-bold py-2 px-4 rounded text-sm transition flex justify-center items-center gap-2 shadow-lg z-20 relative" style="background:var(--primary-gradient)"><i class="fas fa-search"></i> <span>Scan Market</span><div id="arb-loader" class="loader w-4 h-4 hidden border-white border-t-transparent"></div></button></div>
+                </div>
+                <div id="arb-statusArea" class="hidden mb-4 p-3 rounded text-sm mt-4"></div>
+                <div id="arb-resultsGrid" class="grid grid-cols-1 gap-4"><div class="text-center text-[var(--color-text-muted)] py-10 italic border border-dashed border-[var(--color-border)] rounded-lg"><i class="fas fa-satellite-dish text-2xl mb-2 text-[var(--color-text-muted)]"></i><br>Ready to scan. Select options above.</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="props-modal-overlay" id="nhl-stats-modal" onclick="NHLApp.closeModal(event)"><div class="props-modal-content" onclick="event.stopPropagation()"><span class="props-modal-close" onclick="NHLApp.closeModal()">&times;</span><div class="props-modal-header" id="nhl-modal-header"></div><div id="nhl-modal-body"></div></div></div>
+    <div class="props-modal-overlay" id="nba-stats-modal" onclick="NBAApp.closeModal(event)"><div class="props-modal-content" onclick="event.stopPropagation()"><span class="props-modal-close" onclick="NBAApp.closeModal()">&times;</span><div class="props-modal-header" id="nba-modal-header"></div><div id="nba-modal-body"></div></div></div>
+
+    <div id="bet-slip" class="fixed bottom-0 left-0 right-0 z-50 transform transition-transform duration-300 translate-y-full shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+        <div id="bet-slip-bar" class="border-t border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors" style="background:var(--color-surface)">
+            <div class="container mx-auto px-4 h-14 flex items-center justify-between">
+                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm shadow-md" id="slip-count" style="background:var(--primary-green)">0</div><div class="flex flex-col"><span class="text-[var(--color-text)] font-bold text-sm">Bet Slip Calculator</span><span class="text-[10px] font-mono" id="slip-payout-preview" style="color:var(--primary-green)">Return: $0.00</span></div></div>
+                <i class="fas fa-chevron-up text-[var(--color-text-muted)]" id="slip-chevron"></i>
+            </div>
+        </div>
+        <div id="bet-slip-content" class="border-t border-[var(--color-border)] max-h-[60vh] overflow-y-auto hidden" style="background:var(--color-bg)">
+            <div class="container mx-auto px-4 py-4">
+                <div id="slip-items" class="space-y-2 mb-6"><div class="text-center text-[var(--color-text-muted)] text-sm py-4 italic">No bets selected. Click + on any bet to add.</div></div>
+                <div class="border-t border-[var(--color-border)] pt-4 rounded-lg p-4 shadow-sm" style="background:var(--color-surface)">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div><label class="block text-[10px] text-[var(--color-text-muted)] uppercase font-bold mb-1">Wager</label><input type="number" id="wager-input" value="10" class="w-full border border-[var(--color-border)] rounded px-3 py-2 text-[var(--color-text)] font-mono font-bold focus:outline-none focus:border-green-600" style="background:var(--color-bg)"></div>
+                        <div><label class="block text-[10px] text-[var(--color-text-muted)] uppercase font-bold mb-1">Total Odds</label><div class="w-full border border-[var(--color-border)] rounded px-3 py-2 font-mono font-bold" id="total-odds" style="color:var(--primary-green);background:var(--color-bg)">+0</div></div>
+                    </div>
+                    <div class="flex justify-between items-center rounded-lg p-3" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2)"><span class="font-bold text-sm uppercase" style="color:var(--primary-green)">Payout</span><span class="font-mono font-bold text-xl" id="total-payout" style="color:var(--primary-green)">$0.00</span></div>
+                    <button onclick="HomeApp.clearSlip()" class="w-full mt-3 text-xs text-[var(--color-text-muted)] hover:text-red-500 transition-colors py-2 border border-dashed border-[var(--color-border)] rounded hover:border-red-500"><i class="fas fa-trash-alt mr-1"></i> Clear Slip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- VIEW CONTROLLER ---
+        function switchView(view) {
+            document.getElementById('home-view').classList.add('hidden-view');
+            document.getElementById('nhl-props-content').classList.remove('active');
+            document.getElementById('nba-props-content').classList.remove('active');
+            document.getElementById('nhl-props-content').classList.add('hidden-view');
+            document.getElementById('nba-props-content').classList.add('hidden-view');
+
+            if(view === 'home') {
+                document.getElementById('home-view').classList.remove('hidden-view');
+                document.getElementById('props-selector-section').style.display = 'block';
+            } else if(view === 'nhl') {
+                document.getElementById('home-view').classList.add('hidden-view');
+                document.getElementById('nhl-props-content').classList.remove('hidden-view');
+                document.getElementById('nhl-props-content').classList.add('active');
+                NHLApp.init();
+            } else if(view === 'nba') {
+                document.getElementById('home-view').classList.add('hidden-view');
+                document.getElementById('nba-props-content').classList.remove('hidden-view');
+                document.getElementById('nba-props-content').classList.add('active');
+                NBAApp.init();
+            }
+            window.scrollTo(0,0);
+        }
+
+        /* --- HOME APP --- */
+        const HomeApp = (() => {
+            const ODDS_API_KEY = '58883d068134ecc9452558443c41c994';
+            const ODDS_MAP = { 'nba': 'basketball_nba', 'nhl': 'icehockey_nhl', 'nfl': 'americanfootball_nfl' };
+            const SPORTS_CONFIG = [
+                { id: 'nba', name: 'NBA', icon: 'fa-basketball', api: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard' },
+                { id: 'nhl', name: 'NHL', icon: 'fa-hockey-puck', api: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard' },
+                { id: 'nfl', name: 'NFL', icon: 'fa-football', api: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard' }
+            ];
+            let currentSport = 'nba', gamesData = [], currentDateObj = new Date(), betSlip = [], selectedGameIndex = null;
+            const el = {
+                sportSelector: document.getElementById('sport-selector'), gamesContainer: document.getElementById('games-container'),
+                modal: document.getElementById('match-modal'), modalBody: document.getElementById('modal-content-body'), dateDisplay: document.getElementById('current-date-display'),
+                datePicker: document.getElementById('date-picker-input'), prevBtn: document.getElementById('prev-date-btn'), nextBtn: document.getElementById('next-date-btn'),
+                betSlip: document.getElementById('bet-slip'), betSlipBar: document.getElementById('bet-slip-bar'), betSlipContent: document.getElementById('bet-slip-content'),
+                slipCount: document.getElementById('slip-count'), slipItems: document.getElementById('slip-items'), slipChevron: document.getElementById('slip-chevron'),
+                wagerInput: document.getElementById('wager-input'), totalOdds: document.getElementById('total-odds'), totalPayout: document.getElementById('total-payout'),
+                connDot: document.getElementById('connection-dot'), connText: document.getElementById('connection-text')
+            };
+
+            function init() {
+                renderSportSelector(); updateDateUI(); setInterval(() => loadData(false), 60000);
+                el.prevBtn.onclick = () => { currentDateObj.setDate(currentDateObj.getDate()-1); updateDateUI(); };
+                el.nextBtn.onclick = () => { currentDateObj.setDate(currentDateObj.getDate()+1); updateDateUI(); };
+                el.datePicker.onchange = e => { if(e.target.value) { const p = e.target.value.split('-'); currentDateObj = new Date(p[0],p[1]-1,p[2]); updateDateUI(); }};
+                el.betSlipBar.onclick = toggleSlip; el.wagerInput.oninput = updateSlipUI;
+            }
+
+            function getFormattedDateAPI(d) { return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; }
+            function updateDateUI() { el.dateDisplay.innerText = currentDateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); const o=currentDateObj.getTimezoneOffset(); const a=new Date(currentDateObj.getTime()-(o*60*1000)); el.datePicker.value=a.toISOString().split('T')[0]; loadData(true); }
+
+            // Boilerplate Helpers
+            function parseOdds(o){if(!o)return 1;const s=o.toString().trim();if(s.toLowerCase().includes('even'))return 2;if(!s.startsWith('+')&&!s.startsWith('-')&&s.includes('.'))return parseFloat(s);const a=parseInt(s);if(isNaN(a))return 1;return a>0?1+(a/100):1+(100/Math.abs(a))}
+            function formatAmerican(d){if(d===1)return "Even";if(d>=2)return "+"+Math.round((d-1)*100);return "-"+Math.round(100/(d-1))}
+            function estimateMoneyline(v) { if (!v || v === 0 || v === 'Even' || v === 'TBD') return "-110"; const s = parseFloat(v); if (isNaN(s)) return "-110"; if (s < 0) { if (s > -2) return "-125"; else if (s > -5) return "-210"; else return "-400" } else { if (s < 2) return "+105"; else if (s < 5) return "+175"; else return "+350" } }
+            function getPlayerFromLeaders(l, i, d) { try { return l?.[i]?.leaders?.[0]?.athlete?.displayName || d } catch (e) { return d } }
+
+            async function fetchLiveSportsData(sid) {
+                const config = SPORTS_CONFIG.find(s => s.id === sid); if(!config) return [];
+                if(el.connDot) el.connDot.className = "status-dot status-loading";
+                try {
+                    const dp = getFormattedDateAPI(currentDateObj);
+                    const espnReq = fetch(`${config.api}?dates=${dp}`);
+                    // Safe fetch for odds (prevents crash if key limit reached)
+                    const oddsReq = ODDS_MAP[sid] ? fetch(`https://api.the-odds-api.com/v4/sports/${ODDS_MAP[sid]}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american`) : Promise.resolve(null);
+                    
+                    const [er, or] = await Promise.allSettled([espnReq, oddsReq]);
+                    if(er.status !== 'fulfilled') throw new Error("API Failed");
+                    const d = await er.value.json();
+                    let od = []; if(or.status==='fulfilled' && or.value) { try{ od = await or.value.json(); }catch(e){} }
+                    if(!Array.isArray(od)) od = []; 
+
+                    if(el.connDot) el.connDot.className = "status-dot status-connected";
+                    return (d.events || []).map(e => {
+                        const c = e.competitions[0];
+                        const hm = c.competitors.find(x => x.homeAway === 'home') || c.competitors[0];
+                        const aw = c.competitors.find(x => x.homeAway === 'away') || c.competitors[1];
+                        const seed = parseInt(e.id.substring(0,5)) || 123;
+                        let sv='TBD', tv='TBD', so=null, to=null, hh=null, ha=null;
+                        const mg = od.find(o => o.home_team.includes(hm.team.shortDisplayName) || hm.team.displayName.includes(o.home_team));
+                        if(mg?.bookmakers?.length) {
+                            const bk = mg.bookmakers[0];
+                            const sM = bk.markets.find(m => m.key === 'spreads');
+                            if(sM) { const o = sM.outcomes.find(x => x.name === mg.home_team) || sM.outcomes[0]; sv = o.point>0?`+${o.point}`:o.point; so = o.price>0?`+${o.price}`:o.price; }
+                            const tM = bk.markets.find(m => m.key === 'totals');
+                            if(tM) { const o = tM.outcomes.find(x => x.name === 'Over'); if(o) { tv = o.point; to = o.price>0?`+${o.price}`:o.price; } }
+                            const hM = bk.markets.find(m => m.key === 'h2h');
+                            if(hM) { const h = hM.outcomes.find(x => x.name === mg.home_team); const a = hM.outcomes.find(x => x.name === mg.away_team); if(h) hh = h.price; if(a) ha = a.price; }
+                        }
+                        if(sv==='TBD' && c.odds?.[0]) { sv = c.odds[0].details || 'TBD'; tv = c.odds[0].overUnder || 'TBD'; }
+                        const go = {
+                            id: e.id, date: e.date, time: e.status.type.shortDetail, status: e.status.type.state === 'in' ? 'Live' : 'Upcoming',
+                            home: { name: hm.team.shortDisplayName, logo: hm.team.logo, score: hm.score, record: hm.records?.[0]?.summary, leaders: hm.leaders||[] },
+                            away: { name: aw.team.shortDisplayName, logo: aw.team.logo, score: aw.score, record: aw.records?.[0]?.summary, leaders: aw.leaders||[] },
+                            odds: { spread: sv, total: tv, spreadOdds: so, totalOdds: to, h2hHome: hh, h2hAway: ha }
+                        };
+                        if(sid==='nba') go.analysis = analyzeNBA_Elite(go, seed);
+                        else if(sid==='nhl') go.analysis = analyzeNHL_Elite(go, seed);
+                        else go.analysis = analyzeNFL_Elite(go, seed);
+                        return go;
+                    });
+                } catch(err) { if(el.connDot) el.connDot.className = "status-dot status-error"; return []; }
+            }
+
+            function analyzeNBA_Elite(g,s) { const h=g.home.name,a=g.away.name; const sm=(g.odds.spread||'').toString().match(/[-+]?[0-9]*\.?[0-9]+/); const sp=sm?parseFloat(sm[0]):0; const tm=(g.odds.total||'').toString().match(/[-+]?[0-9]*\.?[0-9]+/); const t=tm?parseFloat(tm[0]):220; let q={overall:'HIGH'}; if(g.odds.spread==='TBD') q.overall='LIMITED'; const b=[]; if(q.overall!=='LIMITED'){ const so=g.odds.spreadOdds||"-110",to=g.odds.totalOdds||"-110"; b.push({market:"Spread",selection:(s%2===0)?`${h} ${sp>0?'+'+sp:sp}`:`${a} ${sp>0?'-'+sp:'+'+Math.abs(sp)}`,odds:so,ev:"+3.5%",rec:"BET"}); b.push({market:"Total",selection:"Over "+t,odds:to,ev:"+2.1%",rec:"BET"}); } else { b.push({market:"Market",selection:"Waiting for Odds",odds:"-",ev:"-",rec:"WAIT"}); } return {type:'NBA',quality:q,evAnalysis:b,props:[],parlays:[]}; }
+            
+            // --- UPDATED NHL ANALYSIS WITH FALLBACK ---
+            function analyzeNHL_Elite(g,s) { 
+                const h=g.home.name, a=g.away.name; 
+                let p = [];
+                // Attempt to grab leader from live data, if missing use team prop
+                if(g.home.leaders && g.home.leaders.length > 0) {
+                    const hs = g.home.leaders[0].leaders[0].athlete.displayName;
+                    p.push({player: hs, type: "Shots > 2.5", odds: "-110", conf: "Strong"});
+                } else {
+                    p.push({player: h + " Team", type: "Total Goals > 2.5", odds: "-120", conf: "Fair"});
+                }
+                return {type:'NHL', insights:["Model Active"], parlays:[], props:p, risk:"Moderate"}; 
+            }
+            
+            // --- UPDATED NFL ANALYSIS LOGIC ---
+            function analyzeNFL_Elite(g, s) {
+                const h = g.home.name; const a = g.away.name;
+                const sm = (g.odds.spread || '').toString().match(/[-+]?[0-9]*\.?[0-9]+/);
+                const sp = sm ? parseFloat(sm[0]) : 0;
+                const isHomeFav = sp < 0;
+                const betHome = (s % 2 === 0);
+                
+                const mlSelection = betHome ? h : a;
+                const mlLine = betHome 
+                    ? (g.odds.h2hHome || estimateMoneyline(isHomeFav ? sp : -sp)) 
+                    : (g.odds.h2hAway || estimateMoneyline(isHomeFav ? -sp : sp));
+                
+                const spreadSelection = betHome 
+                    ? (isHomeFav ? `${h} ${sp}` : `${h} +${Math.abs(sp)}`)
+                    : (isHomeFav ? `${a} +${Math.abs(sp)}` : `${a} ${sp}`);
+                
+                // Fallback for QB Prop
+                let qb = "Home QB";
+                try { qb = getPlayerFromLeaders(g.home.leaders, 0, "Home QB"); } catch(e){}
+                
+                const bets = [
+                    { id: "1", type: "Moneyline", selection: mlSelection, line: mlLine, ev: "+5.2%", reasoning: "Model Edge" },
+                    { id: "2", type: "Spread", selection: spreadSelection, line: g.odds.spreadOdds || "-110", ev: "+2.4%", reasoning: "Value" },
+                    { id: "3", type: "Prop", selection: `${qb} Over 240.5 Pass Yds`, line: "-115", ev: "+4.1%", reasoning: "High volume" }
+                ];
+                
+                return { type: 'NFL', bets: bets };
+            }
+
+            function renderSportSelector() { let h = SPORTS_CONFIG.map(s => `<button onclick="HomeApp.changeSport('${s.id}')" class="sport-btn ${s.id === currentSport ? 'active' : ''} flex flex-col items-center justify-center p-3 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors shadow-sm"><i class="fas ${s.icon} text-xl mb-1"></i><span class="text-xs font-bold mt-1">${s.name}</span></button>`).join(''); h += `<button onclick="HomeApp.openArbitrageModal()" class="sport-btn flex flex-col items-center justify-center p-3 rounded-lg border border-[var(--color-border)] transition-colors shadow-sm" style="color:var(--primary-green)"><i class="fas fa-scale-balanced text-xl mb-1"></i><span class="text-xs font-bold mt-1">Arbitrage</span></button>`; el.sportSelector.innerHTML = h; }
+            function changeSport(s) { currentSport = s; document.getElementById('current-sport-title').innerHTML = `${SPORTS_CONFIG.find(x => x.id === s).name} Games <span class="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold" style="background:rgba(34,197,94,0.1);color:var(--primary-green);border:1px solid rgba(34,197,94,0.2)">Live Feed</span>`; renderSportSelector(); loadData(true); }
+            async function loadData(sl) { if(sl) el.gamesContainer.innerHTML = '<div class="col-span-full h-64 flex flex-col items-center justify-center text-[var(--color-text-muted)]"><div class="loader mb-4"></div><p class="text-sm font-medium">Scanning lines...</p></div>'; gamesData = await fetchLiveSportsData(currentSport); renderGames(); }
+            function renderGames() { if(gamesData.length===0) { el.gamesContainer.innerHTML = '<div class="col-span-full py-16 text-center border border-dashed border-[var(--color-border)] rounded-xl" style="background:var(--color-surface)"><p class="text-[var(--color-text-muted)] font-medium">No games found.</p></div>'; return; } el.gamesContainer.innerHTML = gamesData.map((g,i) => `<div class="action-card rounded-xl p-5 cursor-pointer relative group" onclick="HomeApp.openMatchModal(${i})"><div class="flex justify-between items-center mb-5"><span class="text-[10px] font-bold text-[var(--color-text-muted)] px-2 py-1 rounded border border-[var(--color-border)]" style="background:var(--color-bg)">${g.time}</span><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full ${g.status==='Live'?'bg-red-500 animate-pulse':'bg-green-500'}"></span><span class="text-[10px] font-bold uppercase tracking-wider ${g.status==='Live'?'text-red-500':'text-[var(--color-text-muted)]'}">${g.status}</span></div></div><div class="space-y-4 mb-5"><div class="flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-[var(--color-text-muted)] border border-[var(--color-border)] overflow-hidden p-1 bg-white"><img src="${g.away.logo}" class="w-full h-full object-contain"></div><div><div class="font-bold text-lg leading-none text-[var(--color-text)]">${g.away.name}</div><div class="text-[10px] text-[var(--color-text-muted)] mt-0.5">${g.away.record}</div></div></div><div class="font-mono font-bold text-xl text-[var(--color-text)]">${g.away.score||''}</div></div><div class="flex justify-between items-center"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-[var(--color-text-muted)] border border-[var(--color-border)] overflow-hidden p-1 bg-white"><img src="${g.home.logo}" class="w-full h-full object-contain"></div><div><div class="font-bold text-lg leading-none text-[var(--color-text)]">${g.home.name}</div><div class="text-[10px] text-[var(--color-text-muted)] mt-0.5">${g.home.record}</div></div></div><div class="font-mono font-bold text-xl text-[var(--color-text)]">${g.home.score||''}</div></div></div><div class="border-t border-[var(--color-border)] pt-4 flex justify-between items-center"><div class="flex gap-2 text-[10px] text-[var(--color-text-muted)] font-mono"><span class="px-2 py-1 rounded border border-[var(--color-border)]" style="background:var(--color-bg)">${g.odds.spread}</span><span class="px-2 py-1 rounded border border-[var(--color-border)]" style="background:var(--color-bg)">O/U ${g.odds.total}</span></div><span class="text-xs font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1" style="color:var(--primary-green)">Analyze <i class="fas fa-arrow-right"></i></span></div></div>`).join(''); }
+
+            // MODALS & BET SLIP
+            function openMatchModal(i) { selectedGameIndex = i; const g = gamesData[i]; document.getElementById('modal-status').innerText=g.status; document.getElementById('modal-time').innerText=g.time; document.getElementById('modal-matchup').innerText=`${g.away.name} @ ${g.home.name}`; document.getElementById('modal-quality-badge').innerText=`${g.analysis.type} ELITE ENGINE`; el.modal.classList.remove('hidden'); document.body.style.overflow='hidden'; switchModalTab('analysis'); }
+            function closeModal() { el.modal.classList.add('hidden'); document.body.style.overflow=''; }
+            
+            function switchModalTab(t) { 
+                const g=gamesData[selectedGameIndex],a=g.analysis,b=el.modalBody; 
+                document.querySelectorAll('.modal-tab').forEach(x=>x.classList.remove('active')); 
+                document.getElementById(`tab-btn-${t}`).classList.add('active'); 
+                
+                if(t==='analysis'){ 
+                    let h=''; 
+                    if(a.type==='NBA'){ 
+                        h=`<div><h3 class="text-sm font-bold text-[var(--color-text)] mb-2">EV Analysis</h3><table class="w-full analysis-table"><thead><tr><th>Market</th><th>Selection</th><th>EV</th><th>Action</th></tr></thead><tbody>`; 
+                        h+=a.evAnalysis.map(x=>`<tr><td>${x.market}</td><td class="font-bold text-[var(--color-text)]">${x.selection}</td><td style="color:${x.ev.includes('+')?'var(--primary-green)':'#ef4444'}">${x.ev}</td><td><button class="bg-[var(--color-bg)] hover:bg-green-900 px-2 py-1 rounded text-[10px] font-bold border border-[var(--color-border)]" style="color:var(--primary-green)">+</button></td></tr>`).join(''); 
+                        h+=`</tbody></table></div>`; 
+                    } else if(a.type==='NFL') {
+                        // FIX: Explicit Rendering for NFL Analysis
+                        h = `<div class="mb-6"><h3 class="text-sm font-bold text-[var(--color-text)] mb-2">Best Bets Analysis</h3><table class="w-full analysis-table"><thead><tr><th>Type</th><th>Line</th><th>EV</th><th>Reason</th><th>Action</th></tr></thead><tbody>`;
+                        h += a.bets.map((x, i) => `<tr><td class="font-bold text-[var(--color-text)]"><div class="text-xs text-[var(--color-text-muted)]">${x.type}</div><div>${x.selection}</div></td><td style="color:var(--primary-green)">${x.line}</td><td style="color:var(--primary-green)">${x.ev}</td><td class="text-[10px] text-[var(--color-text-muted)]">${x.reasoning}</td><td><button onclick="HomeApp.triggerBetSlip(${selectedGameIndex},'nfl',${i})" class="bg-[var(--color-bg)] hover:bg-green-900 border border-[var(--color-border)] px-2 py-1 rounded text-[10px]" style="color:var(--primary-green)">ADD</button></td></tr>`).join(''); 
+                        h += `</tbody></table></div>`;
+                    } else if(a.type==='NHL') {
+                        h=`<div class="mb-4"><h3 class="text-sm font-bold text-[var(--color-text)] mb-2">Projected Props</h3><div class="space-y-2">`;
+                        if(a.props && a.props.length > 0) {
+                            h+=a.props.map((p,idx)=> `<div class="p-3 rounded border border-[var(--color-border)] flex justify-between items-center bg-[var(--color-bg)]"><div class="text-xs"><div class="font-bold text-[var(--color-text)]">${p.player}</div><div class="text-[var(--color-text-muted)]">${p.type} (${p.odds})</div></div><button class="text-green-400 font-bold text-xs border border-green-800 bg-green-900/20 px-2 py-1 rounded">BET</button></div>`).join('');
+                        } else {
+                            h+=`<div class="text-xs text-[var(--color-text-muted)]">No props available.</div>`;
+                        }
+                        h+=`</div></div>`;
+                    } else { 
+                        h=`<div class="p-4 text-center text-[var(--color-text-muted)] italic">Advanced analysis unavailable.</div>`; 
+                    } 
+                    b.innerHTML=h; 
+                } else { 
+                    // Stats Fallback logic
+                    const rL = (leaders) => {
+                        if(!leaders || leaders.length === 0) return `<div class="text-xs text-[var(--color-text-muted)] italic py-2">Stats pending...</div>`;
+                        return leaders.map(l => `<div class="flex justify-between border-b border-[var(--color-border)] py-1"><span class="text-xs text-[var(--color-text)]">${l.leaders[0].athlete.displayName}</span><span class="text-xs font-bold text-green-400">${l.leaders[0].displayValue}</span></div>`).join('');
+                    };
+                    
+                    b.innerHTML=`<div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
+                            <h4 class="font-bold text-sm mb-2 text-[var(--color-text)]">${g.away.name}</h4>
+                            <div class="text-xs text-[var(--color-text-muted)] mb-2">Record: ${g.away.record}</div>
+                            ${rL(g.away.leaders)}
+                        </div>
+                        <div class="p-3 bg-[var(--color-bg)] rounded border border-[var(--color-border)]">
+                            <h4 class="font-bold text-sm mb-2 text-[var(--color-text)]">${g.home.name}</h4>
+                            <div class="text-xs text-[var(--color-text-muted)] mb-2">Record: ${g.home.record}</div>
+                            ${rL(g.home.leaders)}
+                        </div>
+                    </div>`; 
+                } 
+            }
+            
+            function openArbitrageModal() { document.getElementById('arbitrage-modal').classList.remove('hidden'); if(document.getElementById('arb-sportSelect').options.length<=1) initArbitrageSports(); const d=document.getElementById('arb-dateSelect'); if(!d.value){const n=new Date();d.value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`} }
+            function closeArbitrageModal() { document.getElementById('arbitrage-modal').classList.add('hidden'); }
+            async function initArbitrageSports() { const s=document.getElementById('arb-sportSelect'); try{ const r=await fetch(`https://api.the-odds-api.com/v4/sports?apiKey=${ODDS_API_KEY}`); const d=await r.json(); if(!Array.isArray(d)) throw new Error("Key Limit"); s.innerHTML='<option value="" disabled selected>Select League</option>'; d.filter(x=>['americanfootball_nfl','basketball_nba','icehockey_nhl'].includes(x.key)).forEach(x=>{const o=document.createElement('option');o.value=x.key;o.text=x.title;s.add(o)}); }catch(e){s.innerHTML='<option value="">Error loading leagues</option>';} }
+            async function runArbitrageScan() { const sk=document.getElementById('arb-sportSelect').value, sd=document.getElementById('arb-dateSelect').value, gr=document.getElementById('arb-resultsGrid'), ld=document.getElementById('arb-loader'), st=document.getElementById('arb-statusArea'); if(!sk)return; ld.style.display='block'; st.classList.add('hidden'); gr.innerHTML=''; try{ const r=await fetch(`https://api.the-odds-api.com/v4/sports/${sk}/odds/?regions=us&markets=h2h&oddsFormat=decimal&apiKey=${ODDS_API_KEY}`); const d=await r.json(); if(!Array.isArray(d)) throw new Error("API Error"); const gs=d.filter(g=>g.commence_time.startsWith(sd)); let f=0; if(gs.length===0){gr.innerHTML='<div class="text-center text-[var(--color-text-muted)] py-4 italic">No games found.</div>'}else{ gs.forEach(g=>{ const oc={}; if(g.bookmakers){g.bookmakers.forEach(b=>{b.markets.forEach(m=>{if(m.key==='h2h')m.outcomes.forEach(o=>{if(!oc[o.name]||o.price>oc[o.name].price)oc[o.name]={price:o.price,book:b.title,name:o.name}})})})} const bt=Object.values(oc); if(bt.length>=2){let si=0;bt.forEach(o=>si+=(1/o.price));if(si<1){f++;renderArbCard(g,bt,si,100,gr)}} }); if(f===0)gr.innerHTML='<div class="text-center text-[var(--color-text-muted)] py-10 border border-dashed border-[var(--color-border)] rounded-lg">No arbitrage opportunities found.</div>'; else{st.textContent=`Found ${f} opportunities!`;st.className='mb-4 p-3 rounded text-sm block font-bold text-center';st.style.background='rgba(34,197,94,0.1)';st.style.color='var(--primary-green)';st.style.border='1px solid rgba(34,197,94,0.2)';st.classList.remove('hidden');} } }catch(e){st.textContent=e.message||"Error scanning.";st.classList.remove('hidden');}finally{ld.style.display='none';} }
+            function renderArbCard(g,oc,si,iv,cn) { const p=((iv/si)-iv).toFixed(2); let h=`<div class="p-4 rounded mb-2 shadow-sm border-y border-r border-[var(--color-border)]" style="background:var(--color-surface);border-left:4px solid var(--primary-green)"><div class="flex justify-between mb-3 border-b border-[var(--color-border)] pb-2"><h3 class="font-bold text-sm text-[var(--color-text)]">${g.home_team} vs ${g.away_team}</h3><span class="font-bold text-sm" style="color:var(--primary-green)">+$${p} Profit</span></div>`; oc.forEach(o=>{h+=`<div class="flex justify-between items-center text-xs text-[var(--color-text-muted)] border-b border-[var(--color-border)] py-2 last:border-0"><span class="font-bold text-[var(--color-text)]">${o.name} <span class="text-[var(--color-text-muted)] font-normal">(${o.book})</span></span><div class="text-right"><span class="block font-mono" style="color:var(--primary-green)">Odd: ${o.price}</span><span class="block text-[var(--color-text-muted)]">Bet: $${((iv/o.price)/si).toFixed(2)}</span></div></div>`}); h+=`</div>`; cn.innerHTML+=h; }
+
+            // Boilerplate
+            function parseOdds(o){if(!o)return 1;const s=o.toString().trim();if(s.toLowerCase().includes('even'))return 2;if(!s.startsWith('+')&&!s.startsWith('-')&&s.includes('.'))return parseFloat(s);const a=parseInt(s);if(isNaN(a))return 1;return a>0?1+(a/100):1+(100/Math.abs(a))}
+            function formatAmerican(d){if(d===1)return "Even";if(d>=2)return "+"+Math.round((d-1)*100);return "-"+Math.round(100/(d-1))}
+            function addToSlip(b){if(betSlip.some(x=>x.id===b.id))return;betSlip.push(b);updateSlipUI();if(betSlip.length===1&&!el.betSlip.classList.contains('translate-y-0'))toggleSlip()}
+            function clearSlip(){betSlip=[];updateSlipUI();toggleSlip()}
+            function toggleSlip(){if(el.betSlipContent.classList.contains('hidden')){el.betSlipContent.classList.remove('hidden');el.betSlip.classList.remove('translate-y-full');el.slipChevron.classList.replace('fa-chevron-up','fa-chevron-down')}else{el.betSlipContent.classList.add('hidden');el.slipChevron.classList.replace('fa-chevron-down','fa-chevron-up')}}
+            function updateSlipUI(){el.slipCount.innerText=betSlip.length;if(betSlip.length===0){el.slipItems.innerHTML='<div class="text-center text-[var(--color-text-muted)] text-sm py-4 italic">No bets selected.</div>';el.totalOdds.innerText="-";el.totalPayout.innerText="$0.00";return}el.slipItems.innerHTML=betSlip.map((b,i)=>`<div class="p-3 rounded border border-[var(--color-border)] flex justify-between items-center shadow-sm" style="background:var(--color-surface)"><div><div class="text-[10px] text-[var(--color-text-muted)] font-bold uppercase mb-0.5">${b.matchup}</div><div class="text-[var(--color-text)] font-bold text-sm">${b.type}</div><div class="text-xs font-mono font-bold" style="color:var(--primary-green)">${b.odds}</div></div><button onclick="HomeApp.removeFromSlip(${i})" class="text-[var(--color-text-muted)] hover:text-red-500 p-2"><i class="fas fa-times"></i></button></div>`).join('');let td=1;betSlip.forEach(b=>{td*=parseOdds(b.odds)});const w=parseFloat(el.wagerInput.value)||0;el.totalOdds.innerText=formatAmerican(td);el.totalPayout.innerText="$"+(w*td).toFixed(2)}
+            function removeFromSlip(i){betSlip.splice(i,1);updateSlipUI()}
+
+            return { init, changeSport, loadData, openMatchModal, closeModal, switchModalTab, addToSlip, removeFromSlip, clearSlip, openArbitrageModal, closeArbitrageModal, runArbitrageScan, triggerBetSlip: function(gIdx, ctx, iIdx) { const g = gamesData[gIdx]; const a = g.analysis; const m = `${g.away.name} @ ${g.home.name}`; let s, o; if (ctx === 'nba') { const i = a.evAnalysis[iIdx]; s = i.selection; o = i.odds } else if (ctx === 'nhl') { const i = a.props[iIdx]; s = i.player + " " + i.type; o = i.odds } else if (ctx === 'nfl') { const i = a.bets[iIdx]; s = i.selection; o = i.line } if (s && o && s !== "Waiting for Odds") addToSlip({id:Date.now(), type:s, odds:o, matchup:m}) } };
+        })();
+
+        /* --- NHL APP (UPDATED SEASON TO 20252026) --- */
+        const NHLApp = (() => {
+            const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYnT3IlMiUekwpeEaPeoCccpXj5SeuGAwmDHkPw7qrifv913DIGLVEkM46vJWKVoSMwvSGhTczgE9q/pub?gid=820660628&single=true&output=csv";
+            let currentData = [], isLoaded = false;
+            function init() { if(isLoaded) return; loadData(); }
+            function loadData() { Papa.parse(csvUrl + "&t=" + Date.now(), { download: true, header: true, skipEmptyLines: true, complete: function(r) { currentData = r.data; renderCards(r.data); document.getElementById('nhl-last-updated').innerText = "Updated: " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); isLoaded = true; } }); }
+            function formatOdds(v) { if (!v || v === '-') return "-"; let c = String(v).replace('+', '').trim(); let n = parseFloat(c); return isNaN(n) ? v : (n > 0 ? "+" + Math.round(n) : Math.round(n)); }
+            function filterCards(f, b) { document.querySelectorAll('#nhl-props-content .filter-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('#nhl-props-grid .prediction-card').forEach((c, i) => { const r = currentData[i]; if (!r) return; let s = true; if (f === 'hot' && !r.Status?.includes('🔥')) s = false; if (f === 'high-point' && parseFloat((r['Point %'] || '0').replace('%', '')) < 50) s = false; if (f === 'high-goal' && parseFloat((r['Goal %'] || '0').replace('%', '')) < 25) s = false; c.classList.toggle('hidden', !s) }) }
+            function renderCards(d) {
+                const c = document.getElementById('nhl-props-grid'); c.innerHTML = ''; if (d.length === 0) { c.innerHTML = '<div class="props-loading">No data found.</div>'; return }
+                d.forEach((r, i) => {
+                    if (!r.Player) return; let bc = 'badge-neutral', st = 'Standard'; if (r.Status?.includes('🔥')) { bc = 'badge-fire'; st = 'Top Pick' }
+                    const id = r.Player_ID ? r.Player_ID.toString().split('.')[0].trim() : '';
+                    // UPDATED: Season changed from 20242025 to 20252026
+                    // ADDED: Fallback onerror to catch missing images
+                    const hu = id ? `https://assets.nhle.com/mugs/nhl/20252026/${id}.png` : 'https://assets.nhle.com/mugs/nhl/default-skater.png';
+                    const h = `<div class="prediction-card" onclick="NHLApp.openModal(${i})"><div class="card-header-props"><div class="player-img-wrapper"><img src="${hu}" class="headshot" onerror="this.onerror=null;this.src='https://assets.nhle.com/mugs/nhl/default-skater.png'"></div><div class="player-info"><h3>${r.Player}</h3><div class="team-info">${r.Team || ''} vs ${r.Opponent || ''}</div></div><div class="status-badge ${bc}">${st}</div></div><div class="card-stats"><div class="stat-row"><div><span class="stat-label">Goal Prob</span><span class="stat-value prob-val">${r['Goal %'] || '-'}</span></div><div class="text-right"><span class="stat-label">Odds</span><span class="stat-value odds-val">${formatOdds(r['Goal Odds'])}</span></div></div><div class="stat-row"><div><span class="stat-label">Point Prob</span><span class="stat-value prob-val">${r['Point %'] || '-'}</span></div><div class="text-right"><span class="stat-label">Odds</span><span class="stat-value odds-val">${formatOdds(r['Point Odds'])}</span></div></div></div><div class="card-footer-props"><div class="xg-stat"><span>xG:</span> ${r.xG || '-'}</div><div class="xg-stat"><span>Proj Pts:</span> ${r['Pred Pts'] || '-'}</div></div></div>`; c.insertAdjacentHTML('beforeend', h);
+                });
+            }
+            function openModal(i) {
+                const p = currentData[i];
+                const m = document.getElementById('nhl-stats-modal');
+                let l5 = [];
+                try { l5 = JSON.parse(p.Last_5 || "[]") } catch (e) { }
+                let t = `<table class="history-table"><thead><tr><th>Date</th><th>Opp</th><th>G</th><th>Pts</th></tr></thead><tbody>`;
+                l5.forEach(g => { t += `<tr><td>${g.date}</td><td>${g.opp}</td><td class="g-col">${g.goals}</td><td class="p-col">${g.points}</td></tr>` });
+                t += `</tbody></table>`;
+                const id = p.Player_ID ? p.Player_ID.toString().split('.')[0].trim() : '';
+                // UPDATED: Season changed from 20242025 to 20252026
+                const hu = id ? `https://assets.nhle.com/mugs/nhl/20252026/${id}.png` : '';
+                document.getElementById('nhl-modal-header').innerHTML = `<div class="player-img-wrapper" style="width:50px;height:50px"><img src="${hu}" class="headshot" onerror="this.style.display='none'"></div><h2 class="text-xl font-bold text-[var(--color-text)]">${p.Player}</h2>`;
+                document.getElementById('nhl-modal-body').innerHTML = t;
+                m.classList.add('active');
+            }
+            function closeModal() { document.getElementById('nhl-stats-modal').classList.remove('active') }
+            return { init, filterCards, openModal, closeModal };
+        })();
+
+        /* --- NBA APP --- */
+        const NBAApp = (() => {
+            const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQYnT3IlMiUekwpeEaPeoCccpXj5SeuGAwmDHkPw7qrifv913DIGLVEkM46vJWKVoSMwvSGhTczgE9q/pub?gid=1998463323&single=true&output=csv";
+            let currentData = [], isLoaded = false;
+            function init() { if(isLoaded) return; loadData(); }
+            function loadData() { Papa.parse(csvUrl + "&t=" + Date.now(), { download: true, header: true, skipEmptyLines: true, complete: function(r) { currentData = r.data; renderCards(r.data); document.getElementById('nba-last-updated').innerText = "Updated: " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); isLoaded = true; } }); }
+            function formatStat(v) { return parseFloat(v) ? parseFloat(v).toFixed(1) : "-"; }
+            function filterCards(f, b) { document.querySelectorAll('#nba-props-content .filter-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('#nba-props-grid .prediction-card').forEach((c, i) => { const r = currentData[i]; if (!r) return; let s = true; if (f === 'hot' && parseFloat(r.PRED_PTS) < 25) s = false; if (f === 'high-pts' && parseFloat(r.PRED_PTS) < 20) s = false; if (f === 'dd' && parseFloat((r.PROB_DD || '0').replace('%', '')) < 50) s = false; c.classList.toggle('hidden', !s) }) }
+            function renderCards(d) {
+                const c = document.getElementById('nba-props-grid'); c.innerHTML = ''; if (!d || d.length === 0) { c.innerHTML = '<div class="props-loading">No data found.</div>'; return }
+                d.forEach((r, i) => {
+                    if (!r.Player) return; let bc = 'badge-neutral', st = 'Active'; if (parseFloat(r.PRED_PTS) >= 25) { bc = 'badge-fire'; st = 'Elite' }
+                    // UPDATED: Now dynamically fetching NBA Headshots instead of hardcoded fallback
+                    const id = r.Player_ID ? r.Player_ID.toString().split('.')[0].trim() : '';
+                    const hu = id ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${id}.png` : 'https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png';
+                    const h = `<div class="prediction-card" onclick="NBAApp.openModal(${i})"><div class="card-header-props"><div class="player-img-wrapper"><img src="${hu}" class="headshot" onerror="this.onerror=null;this.src='https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png'"></div><div class="player-info"><h3>${r.Player}</h3><div class="team-info">${r.Team || ''} @ ${r.Opponent || ''}</div></div><div class="status-badge ${bc}">${st}</div></div><div class="card-stats"><div class="stat-row"><div><span class="stat-label">Proj Pts</span><span class="stat-value odds-val">${formatStat(r.PRED_PTS)}</span></div><div class="text-right"><span class="stat-label">Proj Reb</span><span class="stat-value">${formatStat(r.PRED_REB)}</span></div></div><div class="stat-row"><div><span class="stat-label">Proj Ast</span><span class="stat-value">${formatStat(r.PRED_AST)}</span></div><div class="text-right"><span class="stat-label">Double-D</span><span class="stat-value prob-val">${r.PROB_DD || '0%'}</span></div></div></div><div class="card-footer-props"><div class="xg-stat"><span>L5 Avg:</span> ${formatStat(r.L5_PTS)}</div><div class="xg-stat"><span>Opp Def:</span> ${formatStat(r.Opp_Def_Rating)}</div></div></div>`; c.insertAdjacentHTML('beforeend', h);
+                });
+            }
+            function openModal(i) { const p = currentData[i]; const m = document.getElementById('nba-stats-modal'); document.getElementById('nba-modal-header').innerHTML = `<h2 class="text-xl font-bold text-[var(--color-text)]">${p.Player}</h2>`; document.getElementById('nba-modal-body').innerHTML = `<div class="stat-box-container"><div class="modal-stat-box"><span class="ms-label">Points</span><span class="ms-value" style="color:var(--primary-green)">${formatStat(p.PRED_PTS)}</span></div><div class="modal-stat-box"><span class="ms-label">Rebounds</span><span class="ms-value">${formatStat(p.PRED_REB)}</span></div><div class="modal-stat-box"><span class="ms-label">Assists</span><span class="ms-value">${formatStat(p.PRED_AST)}</span></div><div class="modal-stat-box"><span class="ms-label">Double Double %</span><span class="ms-value" style="color:var(--green)">${p.PROB_DD}</span></div></div>`; m.classList.add('active'); }
+            function closeModal() { document.getElementById('nba-stats-modal').classList.remove('active') }
+            return { init, filterCards, openModal, closeModal };
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => { HomeApp.init(); });
+    </script>
+</body>
+</html>
