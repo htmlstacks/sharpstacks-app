@@ -37,8 +37,17 @@ jobs:
 
       - name: Commit and Push Changes
         run: |
-          git config --global user.name "SharpStacks Bot"
-          git config --global user.email "bot@sharpstacks.com"
-          git add nhl_trends.json
-          git commit -m "Auto-update NHL Trends [skip ci]" || echo "No changes to commit"
-          git push
+          - name: Commit and push changes
+      run: |
+        git config --global user.name "SharpStacks Bot"
+        git config --global user.email "bot@sharpstacks.com"
+        git add .
+        # The '|| exit 0' prevents the job from failing if there are no new trends to save
+        git commit -m "Auto-update NHL Trends" || exit 0
+        
+        # --- THIS IS THE FIX ---
+        # Pull the latest changes from GitHub before trying to push
+        git pull --rebase origin main
+        # -----------------------
+        
+        git push
