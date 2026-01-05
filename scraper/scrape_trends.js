@@ -2,63 +2,16 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-// ==========================================
-// 1. REWORDING ENGINE (Template-based)
-// ==========================================
-function rewordTrend(trend) {
-    const templates = [
-        `The ${trend.team} games have leaned ${trend.stat} the total, hitting in ${trend.record} of their previous ${trend.sample}.`,
-        `Recent ${trend.team} matchups show a strong tendency toward the ${trend.stat}, with a ${trend.record} mark over the last ${trend.sample}.`,
-        `The ${trend.team} have produced ${trend.record} results toward the ${trend.stat} across their past ${trend.sample}.`,
-        `Betting trends favor the ${trend.stat} for ${trend.team}, cashing in ${trend.record} during the last ${trend.sample}.`
-    ];
-    return templates[Math.floor(Math.random() * templates.length)];
-}
-
-// ==========================================
-// 2. PARSER (Extracts Data from Text)
-// ==========================================
-function parseTrend(rawText) {
-    // Look for records like "8-2-0" or "8-2"
-    const recordMatch = rawText.match(/\b\d{1,2}-\d{1,2}(?:-\d{1,2})?\b/);
-    const record = recordMatch ? recordMatch[0] : "N/A";
-
-    // Detect Stat Type
-    let stat = "Spread"; 
-    if (rawText.toUpperCase().includes('OVER')) stat = "OVER";
-    if (rawText.toUpperCase().includes('UNDER')) stat = "UNDER";
-
-    // Detect Sample Size
-    let sample = "10 games";
-    if (rawText.includes('last 5')) sample = "5 games";
-    
-    // Team Extraction (Simple Heuristic: First 2 words usually work)
-    // Example: "NY Rangers..." -> "NY Rangers"
-    let team = rawText.split(' ').slice(0, 2).join(' ');
-
-    return {
-        team,
-        stat,
-        record,
-        sample,
-        raw: rawText,
-        processed: true
-    };
-}
-
-// ==========================================
-// 3. MAIN SCRAPER
-// ==========================================
 async function getTrends() {
     console.log("Starting Scraper...");
-    
-    // Launch browser (Headless for server/terminal use)
+
+    // 1. SETUP BROWSER
     const browser = await chromium.launch({ 
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'] 
     });
-    
-    // Create a new browser context with a real User Agent (prevents blocking)
+
+    // Use a standard browser context to avoid detection
     const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         viewport: { width: 1280, height: 720 }
@@ -69,64 +22,105 @@ async function getTrends() {
     try {
         console.log("Navigating to OddsShark...");
         await page.goto('https://www.oddsshark.com/nhl/trends', { waitUntil: 'domcontentloaded', timeout: 60000 });
+        
+        // Wait for the data to populate
+        await page.waitForTimeout(5000);
 
-        // Wait a few seconds for any React/Angular content to populate
-        await page.waitForTimeout(4000);
-
-        // --- THE FIX: BRUTE FORCE TEXT EXTRACTION ---
-        // We grab text from ALL standard text elements (div, p, li, td).
-        // Then we filter specifically for sentences that contain betting keywords.
-        const rawTrends = await page.evaluate(() => {
-            // Select all potential text containers
-            const allElements = document.querySelectorAll('div, p, li, span, td');
-            const allText = Array.from(allElements).map(el => el.innerText);
-            
-            // Remove duplicates to clean up the list
-            const uniqueText = [...new Set(allText)];
-
-            return uniqueText.filter(text => {
-                // Filter 1: Must be a reasonable length (avoid single words)
-                if (!text || text.length < 15) return false;
-                
-                // Filter 2: Must contain key betting words (OVER, UNDER, ATS)
-                const hasKeywords = text.includes('OVER') || text.includes('UNDER') || text.includes('ATS');
-                
-                // Filter 3: Must contain a record format (e.g., "5-1" or "8-2-0")
-                const hasRecord = /\d+-\d+/.test(text);
-
-                return hasKeywords && hasRecord;
-            });
+        // 2. EXTRACT RAW LINES (Top-to-Bottom)
+        // We grab the text of the body and split it by newlines. 
+        // This preserves the visual order of the data.
+        const rawLines = await page.evaluate(() => {
+            return document.body.innerText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0); // Remove empty lines
         });
 
-        console.log(`Found ${rawTrends.length} raw trends.`);
+        console.log(`Scraped ${rawLines.length} lines of text. Processing...`);
 
-        // If 0 trends found, take a screenshot for debugging
-        if (rawTrends.length === 0) {
-            console.log("Warning: 0 trends found. Taking debug screenshot...");
-            await page.screenshot({ path: path.join(__dirname, 'debug_failed.png'), fullPage: true });
+        // 3. PARSE LOGIC (The "Brain")
+        const structuredGames = [];
+        let currentGame = null;
+        let currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+        // Regex helpers
+        const timeRegex = /^\d{1,2}:\d{2}\s+(?:AM|PM)\s+ET$/i; // Matches "7:00 PM ET"
+        const trendRegex = /(?:SU|ATS|OVER|UNDER).*\d+-\d+/; // Matches "SU ... 5-1" or "OVER ... 8-2"
+        const matchupRegex = /^[A-Za-z\s\.]+VS[A-Za-z\s\.]+$/; // Matches "UtahVSNew York"
+
+        for (let i = 0; i < rawLines.length; i++) {
+            const line = rawLines[i];
+
+            // A. CHECK FOR TIME (Start of a new game block)
+            if (timeRegex.test(line)) {
+                // If we were building a game, save it before starting a new one
+                if (currentGame) {
+                    structuredGames.push(currentGame);
+                }
+
+                currentGame = {
+                    time: line,
+                    teams: "Matchup Pending", // Will find in next lines
+                    trends: []
+                };
+                continue;
+            }
+
+            // B. CHECK FOR MATCHUP (Usually appears right after time)
+            // Looking for patterns like "UtahVSNew York" or just "Utah" followed by "VS" later
+            if (currentGame && matchupRegex.test(line)) {
+                currentGame.teams = line;
+                continue;
+            }
+            
+            // Handle split team names (e.g. Line 1: Utah, Line 2: VS, Line 3: New York)
+            if (currentGame && rawLines[i+1] === "VS") {
+                 // Simple lookahead to catch "Utah \n VS \n New York"
+                 currentGame.teams = `${line}VS${rawLines[i+2]}`;
+                 i += 2; // Skip the next two lines since we used them
+                 continue;
+            }
+
+            // C. CHECK FOR TRENDS
+            // Must belong to an active game and look like a trend
+            if (currentGame && trendRegex.test(line)) {
+                // Filter out "Market Analysis" or short garbage lines
+                if (line.length > 20 && !line.includes("Source:")) {
+                    currentGame.trends.push(line);
+                }
+            }
+            
+            // D. DATE CHECK (Optional override if the page lists the date explicitly)
+            if (line.includes("Monday,") || line.includes("Tuesday,") || line.includes("Wednesday,")) {
+                currentDate = line;
+            }
         }
 
-        // Process the raw text into structured data
-        const processedTrends = rawTrends.map(text => {
-            const structured = parseTrend(text);
-            return {
-                ...structured,
-                display_text: rewordTrend(structured)
-            };
-        });
+        // Push the final game if it exists
+        if (currentGame) {
+            structuredGames.push(currentGame);
+        }
 
-        // ==========================================
-        // 4. SAVE DATA
-        // ==========================================
+        // 4. GENERATE OUTPUT
+        // We create a clean JSON structure
         const output = {
-            updated_at: new Date().toISOString(),
-            date_display: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-            trends: processedTrends.slice(0, 20) // Limit to top 20
+            date: currentDate,
+            generated_at: new Date().toISOString(),
+            games: structuredGames.filter(g => g.trends.length > 0) // Only save games with found trends
         };
 
+        // 5. PRINT TO CONSOLE (To match your request format)
+        console.log("\n" + output.date);
+        output.games.forEach(game => {
+            console.log(game.time);
+            console.log(game.teams);
+            game.trends.forEach(t => console.log(t));
+            console.log(""); // Empty line between games
+        });
+
+        // 6. SAVE TO FILE
         const outputPath = path.join(__dirname, '../nhl_trends.json');
         fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-        console.log(`Success: Trends saved to ${outputPath}`);
+        console.log(`Success: Saved ${output.games.length} games to nhl_trends.json`);
 
     } catch (error) {
         console.error("Error scraping trends:", error);
