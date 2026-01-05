@@ -2,50 +2,55 @@ name: Daily NHL Trends Update
 
 on:
   schedule:
-    - cron: '0 13 * * *' # Runs everyday at 8:00 AM EST
-  workflow_dispatch: # Allows manual trigger
-
-permissions:
-  contents: write
+    - cron: '0 13 * * *'  # Runs every day at 13:00 UTC
+  workflow_dispatch:      # Adds the manual "Run workflow" button
+  push:
+    branches:
+      - main              # Runs when you push code to main
 
 jobs:
   scrape-and-update:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    # This gives the default GITHUB_TOKEN permission to push changes
+    permissions:
+      contents: write
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           cd scraper
-          npm install playwright
+          npm install
+          # If you don't use package.json, you can remove 'npm install'
+          # or run 'npm install axios cheerio' (or whatever libraries you use) manually here.
 
-      - name: Install Playwright Browsers
+      - name: Run scraper script
         run: |
           cd scraper
-          npx playwright install --with-deps
-
-      - name: Run Scraper
-        run: |
           node scrape_trends.js
 
       - name: Commit and push changes
-      run: |
-        git config --global user.name "SharpStacks Bot"
-        git config --global user.email "bot@sharpstacks.com"
-        git add .
-        # The '|| exit 0' prevents the job from failing if there are no new trends to save
-        git commit -m "Auto-update NHL Trends" || exit 0
-        
-        # --- THIS IS THE FIX ---
-        # Pull the latest changes from GitHub before trying to push
-        git pull --rebase origin main
-        # -----------------------
-        
-        git push
+        run: |
+          git config --global user.name "SharpStacks Bot"
+          git config --global user.email "bot@sharpstacks.com"
+          
+          # Stage all changes (new data)
+          git add .
+          
+          # Commit only if there are changes; otherwise, exit without error
+          git commit -m "Auto-update NHL Trends" || exit 0
+          
+          # --- CRITICAL FIX ---
+          # Pull latest changes from GitHub to avoid "fetch first" errors
+          git pull --rebase origin main
+          # --------------------
+          
+          git push
