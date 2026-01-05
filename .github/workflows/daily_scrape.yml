@@ -35,9 +35,7 @@ jobs:
         run: |
           node scrape_trends.js
 
-      - name: Commit and Push Changes
-        run: |
-          - name: Commit and push changes
+      - name: Commit and push changes
       run: |
         git config --global user.name "SharpStacks Bot"
         git config --global user.email "bot@sharpstacks.com"
