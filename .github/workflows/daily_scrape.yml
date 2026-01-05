@@ -2,17 +2,16 @@ name: Daily NHL Trends Update
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # Runs every day at 13:00 UTC
-  workflow_dispatch:      # Adds the manual "Run workflow" button
+    - cron: '0 13 * * *'
+  workflow_dispatch:
   push:
     branches:
-      - main              # Runs when you push code to main
+      - main
 
 jobs:
   scrape-and-update:
     runs-on: ubuntu-latest
 
-    # This gives the default GITHUB_TOKEN permission to push changes
     permissions:
       contents: write
 
@@ -29,8 +28,13 @@ jobs:
         run: |
           cd scraper
           npm install
-          # If you don't use package.json, you can remove 'npm install'
-          # or run 'npm install axios cheerio' (or whatever libraries you use) manually here.
+
+      # --- NEW STEP ADDED HERE ---
+      - name: Install Playwright Browsers
+        run: |
+          cd scraper
+          npx playwright install --with-deps
+      # ---------------------------
 
       - name: Run scraper script
         run: |
@@ -41,16 +45,7 @@ jobs:
         run: |
           git config --global user.name "SharpStacks Bot"
           git config --global user.email "bot@sharpstacks.com"
-          
-          # Stage all changes (new data)
           git add .
-          
-          # Commit only if there are changes; otherwise, exit without error
           git commit -m "Auto-update NHL Trends" || exit 0
-          
-          # --- CRITICAL FIX ---
-          # Pull latest changes from GitHub to avoid "fetch first" errors
           git pull --rebase origin main
-          # --------------------
-          
           git push
