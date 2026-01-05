@@ -1,5 +1,186 @@
 {
-  "updated_at": "2026-01-05T14:02:44.992Z",
+  "updated_at": "2026-01-05T22:07:44.159Z",
   "date_display": "Monday, January 5",
-  "trends": []
+  "trends": [
+    {
+      "team": "Utah is",
+      "stat": "Spread",
+      "record": "2-4",
+      "sample": "10 games",
+      "raw": "Utah is 2-4 SU in its last 6 games.",
+      "processed": true,
+      "display_text": "The Utah is have produced 2-4 results toward the Spread across their past 10 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "Spread",
+      "record": "2-7",
+      "sample": "10 games",
+      "raw": "Utah is 2-7 SU in its last 9 games against NY Rangers.",
+      "processed": true,
+      "display_text": "Betting trends favor the Spread for NY Rangers, cashing in 2-7 during the last 10 games."
+    },
+    {
+      "team": "The total",
+      "stat": "UNDER",
+      "record": "N/A",
+      "sample": "5 games",
+      "raw": "The total has gone UNDER in 4 of Utah's last 5 games on the road.",
+      "processed": true,
+      "display_text": "The The total have produced N/A results toward the UNDER across their past 5 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "Spread",
+      "record": "3-12",
+      "sample": "10 games",
+      "raw": "Utah is 3-12 SU in its last 15 games when playing on the road against NY Rangers.",
+      "processed": true,
+      "display_text": "The NY Rangers games have leaned Spread the total, hitting in 3-12 of their previous 10 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "Spread",
+      "record": "2-4",
+      "sample": "10 games",
+      "raw": "NY Rangers is 2-4 SU in its last 6 games.",
+      "processed": true,
+      "display_text": "Betting trends favor the Spread for NY Rangers, cashing in 2-4 during the last 10 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "UNDER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone UNDER in 8 of NY Rangers' last 10 games at home.",
+      "processed": true,
+      "display_text": "Betting trends favor the UNDER for NY Rangers, cashing in N/A during the last 10 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "Spread",
+      "record": "12-3",
+      "sample": "10 games",
+      "raw": "NY Rangers is 12-3 SU in its last 15 games when playing at home against Utah.",
+      "processed": true,
+      "display_text": "The NY Rangers have produced 12-3 results toward the Spread across their past 10 games."
+    },
+    {
+      "team": "NY Rangers",
+      "stat": "UNDER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone UNDER in 10 of NY Rangers' last 10 games against an opponent in the Western Conference conference.",
+      "processed": true,
+      "display_text": "The NY Rangers games have leaned UNDER the total, hitting in N/A of their previous 10 games."
+    },
+    {
+      "team": "The total",
+      "stat": "OVER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone OVER in 7 of Anaheim's last 8 games.",
+      "processed": true,
+      "display_text": "The The total games have leaned OVER the total, hitting in N/A of their previous 10 games."
+    },
+    {
+      "team": "Anaheim is",
+      "stat": "Spread",
+      "record": "0-5",
+      "sample": "5 games",
+      "raw": "Anaheim is 0-5 SU in its last 5 games.",
+      "processed": true,
+      "display_text": "The Anaheim is have produced 0-5 results toward the Spread across their past 5 games."
+    },
+    {
+      "team": "Anaheim is",
+      "stat": "Spread",
+      "record": "1-5",
+      "sample": "10 games",
+      "raw": "Anaheim is 1-5 SU in its last 6 games against Washington.",
+      "processed": true,
+      "display_text": "The Anaheim is have produced 1-5 results toward the Spread across their past 10 games."
+    },
+    {
+      "team": "Anaheim is",
+      "stat": "Spread",
+      "record": "1-4",
+      "sample": "5 games",
+      "raw": "Anaheim is 1-4 SU in its last 5 games on the road.",
+      "processed": true,
+      "display_text": "Recent Anaheim is matchups show a strong tendency toward the Spread, with a 1-4 mark over the last 5 games."
+    },
+    {
+      "team": "The total",
+      "stat": "OVER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone OVER in 5 of Washington's last 6 games.",
+      "processed": true,
+      "display_text": "Betting trends favor the OVER for The total, cashing in N/A during the last 10 games."
+    },
+    {
+      "team": "Washington is",
+      "stat": "Spread",
+      "record": "3-9",
+      "sample": "10 games",
+      "raw": "Washington is 3-9 SU in its last 12 games.",
+      "processed": true,
+      "display_text": "Recent Washington is matchups show a strong tendency toward the Spread, with a 3-9 mark over the last 10 games."
+    },
+    {
+      "team": "Washington is",
+      "stat": "Spread",
+      "record": "2-4",
+      "sample": "10 games",
+      "raw": "Washington is 2-4 SU in its last 6 games at home.",
+      "processed": true,
+      "display_text": "Recent Washington is matchups show a strong tendency toward the Spread, with a 2-4 mark over the last 10 games."
+    },
+    {
+      "team": "Washington is",
+      "stat": "Spread",
+      "record": "4-1",
+      "sample": "5 games",
+      "raw": "Washington is 4-1 SU in its last 5 games when playing at home against Anaheim.",
+      "processed": true,
+      "display_text": "The Washington is games have leaned Spread the total, hitting in 4-1 of their previous 5 games."
+    },
+    {
+      "team": "The total",
+      "stat": "UNDER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone UNDER in 8 of Detroit's last 12 games.",
+      "processed": true,
+      "display_text": "The The total games have leaned UNDER the total, hitting in N/A of their previous 10 games."
+    },
+    {
+      "team": "Detroit is",
+      "stat": "Spread",
+      "record": "10-5",
+      "sample": "10 games",
+      "raw": "Detroit is 10-5 SU in its last 15 games.",
+      "processed": true,
+      "display_text": "The Detroit is games have leaned Spread the total, hitting in 10-5 of their previous 10 games."
+    },
+    {
+      "team": "Detroit is",
+      "stat": "Spread",
+      "record": "1-6",
+      "sample": "10 games",
+      "raw": "Detroit is 1-6 SU in its last 7 games against Ottawa.",
+      "processed": true,
+      "display_text": "The Detroit is have produced 1-6 results toward the Spread across their past 10 games."
+    },
+    {
+      "team": "The total",
+      "stat": "OVER",
+      "record": "N/A",
+      "sample": "10 games",
+      "raw": "The total has gone OVER in 6 of Detroit's last 9 games on the road.",
+      "processed": true,
+      "display_text": "Betting trends favor the OVER for The total, cashing in N/A during the last 10 games."
+    }
+  ]
 }
