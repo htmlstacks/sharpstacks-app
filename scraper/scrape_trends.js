@@ -2,8 +2,25 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
+// Helper to extract team names from trend text
+function extractTeamFromTrend(text) {
+    // List of known NHL team identifiers for matching
+    const teams = [
+        "Anaheim", "Boston", "Buffalo", "Calgary", "Carolina", "Chicago", "Colorado", "Columbus",
+        "Dallas", "Detroit", "Edmonton", "Florida", "Los Angeles", "Minnesota", "Montreal", 
+        "Nashville", "New Jersey", "NY Islanders", "NY Rangers", "Ottawa", "Philadelphia", 
+        "Pittsburgh", "San Jose", "Seattle", "St. Louis", "Tampa Bay", "Toronto", "Utah", 
+        "Vancouver", "Vegas", "Washington", "Winnipeg", "Arizona"
+    ];
+
+    for (const team of teams) {
+        if (text.includes(team)) return team;
+    }
+    return "Unknown Team";
+}
+
 async function getTrends() {
-    console.log("Starting Scraper...");
+    console.log("Starting Robust Scraper...");
 
     const browser = await chromium.launch({ 
         headless: true,
@@ -20,108 +37,98 @@ async function getTrends() {
     try {
         console.log("Navigating to OddsShark...");
         await page.goto('https://www.oddsshark.com/nhl/trends', { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await page.waitForTimeout(5000); // Wait for data load
+        
+        // Wait longer for the full list to load
+        await page.waitForTimeout(6000);
 
-        // 2. EXTRACT RAW LINES
+        // 1. GET ALL TEXT LINES
+        // We capture everything to ensure we don't miss "hidden" blocks
         const rawLines = await page.evaluate(() => {
             return document.body.innerText.split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0);
         });
 
-        console.log(`Scraped ${rawLines.length} lines. Processing...`);
+        console.log(`Scanned ${rawLines.length} lines. looking for patterns...`);
 
-        // --- DEBUG: If we fail to parse, we need to see WHY ---
-        // If the script fails, this will print the start of the file so we can see the format.
-        if (rawLines.length > 0) {
-            console.log("\n--- PREVIEW OF SCRAPED TEXT (First 15 lines) ---");
-            rawLines.slice(0, 15).forEach(l => console.log(`[${l}]`));
-            console.log("------------------------------------------------\n");
-        }
+        // 2. INTELLIGENT PARSING
+        const gamesMap = new Map(); // Store games by "Team vs Opponent" key
 
-        // 3. PARSE LOGIC
-        const structuredGames = [];
-        let currentGame = null;
-        let currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        let lastTimeFound = "Time TBD";
 
-        // UPDATED REGEX (More flexible)
-        // 1. Time: Matches "7:00 PM" OR "7:00 PM ET"
-        const timeRegex = /^\d{1,2}:\d{2}\s+(?:AM|PM)(?:\s+ET)?$/i;
+        // Loose regex to catch times like "7:00 PM", "7:00 PM ET", "FINAL", "TODAY"
+        const timeRegex = /(\d{1,2}:\d{2}\s?(?:AM|PM)|FINAL|TODAY)/i;
         
-        // 2. Matchup: Matches "UtahVSNew York" OR "Utah @ New York"
-        // Also checks if the line contains "VS" surrounded by letters
-        const matchupRegex = /^[A-Za-z0-9\.\s]+VS[A-Za-z0-9\.\s]+$/i;
-
-        // 3. Trend: Must have SU/ATS/OVER/UNDER and a record like 5-1
+        // Regex to find betting trends (Must have SU/ATS/OVER/UNDER + a record)
         const trendRegex = /(?:SU|ATS|OVER|UNDER).*\d+-\d+/;
 
         for (let i = 0; i < rawLines.length; i++) {
             const line = rawLines[i];
 
-            // A. CHECK FOR TIME
-            if (timeRegex.test(line)) {
-                if (currentGame) structuredGames.push(currentGame);
+            // A. UPDATE TIME CONTEXT
+            // If we see a time, update our "current time" tracker
+            if (timeRegex.test(line) && line.length < 20) {
+                lastTimeFound = line;
+            }
+
+            // B. FIND TRENDS
+            if (trendRegex.test(line) && line.length > 20 && !line.includes("Source:")) {
                 
-                currentGame = {
-                    time: line.includes("ET") ? line : `${line} ET`, // Add ET if missing for consistency
-                    teams: "Matchup Pending",
-                    trends: []
-                };
-                continue;
-            }
-
-            // B. CHECK FOR MATCHUP
-            // 1. Single Line "UtahVSNew York"
-            if (currentGame && matchupRegex.test(line)) {
-                currentGame.teams = line;
-                continue;
-            }
-            // 2. Split Lines "Utah" then "VS" then "New York"
-            if (currentGame && rawLines[i+1] === "VS") {
-                currentGame.teams = `${line}VS${rawLines[i+2]}`;
-                i += 2; // Skip "VS" and the second team name
-                continue;
-            }
-
-            // C. CHECK FOR TRENDS
-            if (currentGame && trendRegex.test(line)) {
-                if (line.length > 20 && !line.includes("Source:")) {
-                    currentGame.trends.push(line);
+                // 1. Identify who this trend is about
+                const primaryTeam = extractTeamFromTrend(line);
+                
+                if (primaryTeam !== "Unknown Team") {
+                    // Create a unique key for the game (e.g., "Utah_Game")
+                    // We group by the team name. Later we can pair them if needed.
+                    if (!gamesMap.has(primaryTeam)) {
+                        gamesMap.set(primaryTeam, {
+                            time: lastTimeFound,
+                            team: primaryTeam,
+                            trends: []
+                        });
+                    }
+                    gamesMap.get(primaryTeam).trends.push(line);
                 }
-            }
-
-            // D. DATE CHECK
-            if (line.includes("Monday,") || line.includes("Tuesday,") || line.includes("Wednesday,")) {
-                currentDate = line;
             }
         }
 
-        // Push final game
-        if (currentGame) structuredGames.push(currentGame);
+        // 3. FORMAT THE OUTPUT
+        // Convert our Map into the Array format you requested
+        const gameList = Array.from(gamesMap.values());
 
-        // 4. GENERATE OUTPUT
+        // Simple deduplication/merging logic
+        // (Optional: If you want to merge "Utah" and "NY Rangers" into one block, 
+        // we can do that, but listing by Team is safer to avoid mismatching).
+        
         const output = {
-            date: currentDate,
+            date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
             generated_at: new Date().toISOString(),
-            games: structuredGames.filter(g => g.trends.length > 0)
+            games: gameList.map(g => ({
+                time: g.time,
+                teams: `${g.team} (and opponent)`, // Simplified header
+                trends: g.trends
+            }))
         };
 
-        // Print to Console (User Requested Format)
-        if (output.games.length > 0) {
+        // 4. PRINT TO CONSOLE (The specific format you asked for)
+        if (gameList.length > 0) {
             console.log("\n" + output.date);
-            output.games.forEach(game => {
+            
+            gameList.forEach(game => {
                 console.log(game.time);
-                console.log(game.teams);
+                console.log(game.team + " Matchup"); 
                 game.trends.forEach(t => console.log(t));
                 console.log("");
             });
-            
-            // Save to File
+
+            // 5. SAVE FILE
             const outputPath = path.join(__dirname, '../nhl_trends.json');
             fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-            console.log(`Success: Saved ${output.games.length} games to nhl_trends.json`);
+            console.log(`Success: Saved ${gameList.length} team trend blocks to nhl_trends.json`);
         } else {
-            console.log("ERROR: 0 Games saved. Please check the 'PREVIEW' above to see if the website changed formats.");
+            console.log("Warning: No trends found. The page might be empty or showing 'No Games Today'.");
+            // Save empty file to prevent errors
+            fs.writeFileSync(path.join(__dirname, '../nhl_trends.json'), JSON.stringify({ games: [] }));
         }
 
     } catch (error) {
